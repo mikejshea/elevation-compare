@@ -289,8 +289,7 @@ body {
 
 .route-item {
   display: flex;
-  align-items: center;
-  gap: var(--sp-sm);
+  flex-direction: column;
   padding: 7px var(--sp-sm);
   border-radius: var(--radius-sm);
   transition: background 0.1s;
@@ -298,6 +297,12 @@ body {
 
 .route-item:hover {
   background: var(--color-surface-hover);
+}
+
+.route-item__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
 }
 
 .route-item__checkbox {
@@ -321,6 +326,35 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.route-item__offset {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  padding-top: 5px;
+  padding-left: calc(15px + var(--sp-sm)); /* indent past checkbox */
+}
+
+.route-item__offset-label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.route-item__offset-slider {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.route-item__offset-value {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  min-width: 58px;
+  text-align: right;
 }
 
 /* ============================================================
