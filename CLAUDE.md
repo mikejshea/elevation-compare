@@ -3,6 +3,22 @@
 ## Overview
 A single-page web application that allows users to upload `.gpx` files from Strava or Garmin and visually compare elevation profiles across multiple routes on a single overlaid graph. No backend storage, no authentication, no database.
 
+**Live URL:** https://elevation-compare-elnvvp4iaq-uc.a.run.app
+**GitHub:** https://github.com/mikejshea/elevation-compare
+
+---
+
+## v1 Status — All Phases Complete
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | Backend — Go HTTP server, GPX parser, unit tests | Complete |
+| 2 | Frontend — HTML/CSS/JS, Chart.js graph, light/dark mode | Complete |
+| 3 | Docker — two-stage Alpine build, verified locally | Complete |
+| 4 | Terraform — Cloud Run, Artifact Registry, WIF, GCS state | Complete |
+| 5 | GitHub Actions — CI/CD pipeline with Workload Identity Federation | Complete |
+| 6 | Live deployment — Cloud Run deployed and verified | Complete |
+
 ---
 
 ## Core Functionality
@@ -54,19 +70,22 @@ A single-page web application that allows users to upload `.gpx` files from Stra
 - Mobile-responsive layout (sidebar collapses on small screens)
 
 ### Infrastructure: Google Cloud Platform
-- **Cloud Run**: containerized Go app (serverless, pay-per-request)
-- **Cloud Storage + Cloud CDN** (optional): serve static assets if needed
-- Target: essentially $0/month for low-traffic usage
-- Docker container: small Alpine-based Go image
+- **Cloud Run**: containerized Go app (serverless, scales to zero)
+- GCP project: `elevation-compare`, region: `us-central1`
+- Docker container: two-stage Alpine-based Go image (golang:1.22-alpine → alpine:3.20)
+- Runtime: 1 CPU / 512Mi memory, CPU allocated during requests only (`cpu_idle = true`)
 
 ### IaC: Terraform
-- Provision: Cloud Run service, Artifact Registry (Docker images), IAM, Cloud Build trigger (optional)
-- Store Terraform state in a GCS bucket
-- Separate `environments/` for staging and production if needed
+- Provisions: Cloud Run service, Artifact Registry, IAM, Workload Identity Federation
+- Remote state stored in GCS bucket `elevation-compare-tfstate`
+- `github_repo` variable defaults to `mikejshea/elevation-compare`
 
 ### CI/CD: GitHub Actions
-- On push to `main`: build Docker image, push to Artifact Registry, deploy to Cloud Run
-- Terraform apply in pipeline (or manual for infra changes)
+- Trigger: push to `main`
+- Auth: **Workload Identity Federation** — no long-lived service account keys stored in GitHub
+- Steps: build Docker image → push to Artifact Registry → deploy to Cloud Run
+- Image tagged with `github.sha` for traceability
+- GitHub secrets required: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT` (values from `terraform output`)
 
 ---
 
@@ -76,6 +95,7 @@ A single-page web application that allows users to upload `.gpx` files from Stra
 elevation_compare/
 ├── CLAUDE.md                  # This file
 ├── README.md
+├── .gitignore
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml         # GitHub Actions CI/CD
@@ -207,17 +227,43 @@ The image uses a two-stage build (golang:1.22-alpine → alpine:3.20) and runs a
 
 ---
 
-## Out of Scope (v1)
-- User accounts or authentication
-- Persistent storage of routes across sessions
-- Route editing or annotation
-- Map view of the route
-- Social sharing
+## GCP Infrastructure Notes
+
+- GCP project `elevation-compare` deployed to `us-central1`
+- Terraform state bucket: `gs://elevation-compare-tfstate` (must exist before `terraform init`)
+- Cloud Run service account: `elevation-compare-run@elevation-compare.iam.gserviceaccount.com`
+- GitHub Actions service account: `github-actions@elevation-compare.iam.gserviceaccount.com`
+- WIF pool: `elevation-compare-github`, scoped to `mikejshea/elevation-compare`
+- Terraform manages infra; `gcloud run deploy` in GitHub Actions manages image updates (Terraform ignores image changes via `lifecycle.ignore_changes`)
+
+### Re-deploying infra
+```bash
+cd terraform
+terraform init
+terraform apply
+```
+
+### Manually deploying an image
+```bash
+gcloud run deploy elevation-compare \
+  --image=us-central1-docker.pkg.dev/elevation-compare/elevation-compare/server:TAG \
+  --region=us-central1 \
+  --project=elevation-compare
+```
 
 ---
 
-## GCP Setup Notes
-- Project will be created fresh; no existing GCP account
-- Billing must be enabled but costs should stay in free tier
-- Use `us-central1` as default region
-- Service account for GitHub Actions: minimal permissions (Cloud Run Admin, Artifact Registry Writer)
+## V2 Backlog
+
+Features deferred from v1, in no particular priority order:
+
+- Map view of the route (Leaflet.js or Mapbox)
+- Route editing and annotation
+- Social sharing / permalink to a comparison set
+- Persistent storage of routes across sessions
+- User accounts and saved route collections
+- Segment highlighting (mark a climb or key section)
+- Grade / gradient overlay on the elevation graph
+- Export comparison as image or PDF
+
+---
