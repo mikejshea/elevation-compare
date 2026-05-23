@@ -257,6 +257,25 @@ gcloud run deploy elevation-compare \
 
 Features deferred from v1, in no particular priority order:
 
+### Route map thumbnail
+Draw an SVG polyline thumbnail of each route's GPS path inline in the sidebar below the route name. No external map API — normalize the lat/lon coordinates to fit a small fixed-size SVG box with a neutral background.
+
+Implementation notes:
+- Backend: lat/lon points are already parsed by `gpx.Parse` but not currently returned. Add a `points_geo` field (or extend the existing `points` array) to include `lat` and `lon` alongside `distance` and `elevation` in the `/upload` response
+- Frontend: after upload, generate an SVG `<polyline>` by mapping lat/lon to SVG viewport coordinates — scale and translate so the bounding box of the route fills the SVG box with a small padding margin
+- SVG box: fixed size (e.g. 240×120px), neutral stroke color that adapts to light/dark mode via CSS custom properties, no tiles or external requests
+
+### Route X-axis offset slider
+Add a per-route slider in the sidebar that shifts that route's dataset forward along the X axis. For example, sliding a 50-mile route to start at mile 50 allows comparison against the second half of a 100-mile route.
+
+Implementation notes:
+- Frontend only — no backend changes needed
+- Store an offset value (default 0) per route; when rendering, add the offset to each distance point before passing the dataset to Chart.js
+- Slider range: 0 to the total distance of the longest currently-loaded route; update the max dynamically when routes are added or removed
+- Display the current offset value next to the slider (e.g. `+12.4 km`)
+- Respect the active km/miles unit toggle when displaying and applying the offset
+
+### Other backlog items
 - Map view of the route (Leaflet.js or Mapbox)
 - Route editing and annotation
 - Social sharing / permalink to a comparison set

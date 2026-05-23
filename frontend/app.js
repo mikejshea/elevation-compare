@@ -13,10 +13,11 @@ const M_TO_FT     = 3.28084;
 
 // ── State ─────────────────────────────────────────────────────────────────
 
-const routes = [];   // { id, name, data, visible, color }
-let chart    = null;
-let distUnit = 'km'; // 'km' | 'miles'
-let eleUnit  = 'm';  // 'm' | 'ft'
+const routes = [];   // { id, name, data, visible, color, offsetKm, offsetSlider, offsetLabel }
+let chart       = null;
+let distUnit    = 'km'; // 'km' | 'miles'
+let eleUnit     = 'm';  // 'm' | 'ft'
+let routeSeq    = 0;    // incrementing id for slider label association
 
 // ── DOM References ────────────────────────────────────────────────────────
 
@@ -62,6 +63,7 @@ distanceToggle.addEventListener('click', () => {
   distUnit = distUnit === 'km' ? 'miles' : 'km';
   distanceToggle.textContent = distUnit;
   distanceToggle.setAttribute('aria-label', `Switch to ${distUnit === 'km' ? 'miles' : 'km'}`);
+  updateAllSliderUnits();
   if (chart) renderChart();
 });
 
@@ -134,23 +136,29 @@ async function uploadFile(file) {
 // ── Route Management ──────────────────────────────────────────────────────
 
 function addRoute(data) {
+  const routeId = `route-${++routeSeq}`;
   const route = {
-    id:      Symbol(),
-    name:    data.name,
+    id:       Symbol(),
+    name:     data.name,
     data,
-    visible: true,
-    color:   COLORS[routes.length % COLORS.length],
+    visible:  true,
+    color:    COLORS[routes.length % COLORS.length],
+    offsetKm: 0,
   };
   routes.push(route);
 
   emptyState.style.display = 'none';
 
-  const li       = document.createElement('li');
-  li.className   = 'route-item';
+  const li = document.createElement('li');
+  li.className = 'route-item';
   li.setAttribute('role', 'listitem');
 
+  // ── Header row: checkbox + color dot + name ──────────────────────────────
+  const header = document.createElement('div');
+  header.className = 'route-item__header';
+
   const checkbox = document.createElement('input');
-  checkbox.type  = 'checkbox';
+  checkbox.type      = 'checkbox';
   checkbox.className = 'route-item__checkbox';
   checkbox.checked   = true;
   checkbox.setAttribute('aria-label', `Show ${data.name}`);
@@ -169,10 +177,47 @@ function addRoute(data) {
   name.textContent = data.name;
   name.title       = data.name;
 
-  li.append(checkbox, dot, name);
+  header.append(checkbox, dot, name);
+
+  // ── Offset row: label + slider + value ───────────────────────────────────
+  const offsetRow = document.createElement('div');
+  offsetRow.className = 'route-item__offset';
+
+  const offsetLabelEl = document.createElement('label');
+  offsetLabelEl.className   = 'route-item__offset-label';
+  offsetLabelEl.textContent = 'Offset';
+  offsetLabelEl.setAttribute('for', `${routeId}-offset`);
+
+  const slider = document.createElement('input');
+  slider.type      = 'range';
+  slider.id        = `${routeId}-offset`;
+  slider.className = 'route-item__offset-slider';
+  slider.min       = '0';
+  slider.max       = '0'; // set correctly by updateAllSliderMaxes() below
+  slider.step      = '0.1';
+  slider.value     = '0';
+  slider.setAttribute('aria-label', `X-axis offset for ${data.name}`);
+
+  const offsetValue = document.createElement('span');
+  offsetValue.className   = 'route-item__offset-value';
+  offsetValue.textContent = formatOffset(0);
+
+  slider.addEventListener('input', () => {
+    const displayVal  = parseFloat(slider.value);
+    route.offsetKm    = distUnit === 'miles' ? displayVal / KM_TO_MILES : displayVal;
+    offsetValue.textContent = formatOffset(route.offsetKm);
+    renderChart();
+  });
+
+  route.offsetSlider = slider;
+  route.offsetLabel  = offsetValue;
+
+  offsetRow.append(offsetLabelEl, slider, offsetValue);
+  li.append(header, offsetRow);
   routeList.appendChild(li);
 
   routeCount.textContent = routes.length;
+  updateAllSliderMaxes();
   renderChart();
 }
 
@@ -192,11 +237,45 @@ function chartThemeColors() {
   };
 }
 
-function convertPoint(p) {
+function convertPoint(p, offsetKm = 0) {
+  const distKm = p.distance + offsetKm;
   return {
-    x: distUnit === 'miles' ? +(p.distance * KM_TO_MILES).toFixed(3) : p.distance,
-    y: eleUnit  === 'ft'    ? +(p.elevation * M_TO_FT).toFixed(1)    : p.elevation,
+    x: distUnit === 'miles' ? +(distKm * KM_TO_MILES).toFixed(3) : distKm,
+    y: eleUnit  === 'ft'    ? +(p.elevation * M_TO_FT).toFixed(1) : p.elevation,
   };
+}
+
+function formatOffset(offsetKm) {
+  return distUnit === 'miles'
+    ? `+${(offsetKm * KM_TO_MILES).toFixed(1)} mi`
+    : `+${offsetKm.toFixed(1)} km`;
+}
+
+function getMaxRouteDistanceKm() {
+  if (!routes.length) return 0;
+  return Math.max(...routes.map(r => {
+    const pts = r.data.points;
+    return pts.length ? pts[pts.length - 1].distance : 0;
+  }));
+}
+
+function updateAllSliderMaxes() {
+  const maxKm = getMaxRouteDistanceKm();
+  const maxDisplay = distUnit === 'miles' ? +(maxKm * KM_TO_MILES).toFixed(1) : +maxKm.toFixed(1);
+  routes.forEach(r => { if (r.offsetSlider) r.offsetSlider.max = maxDisplay; });
+}
+
+function updateAllSliderUnits() {
+  const maxKm = getMaxRouteDistanceKm();
+  const maxDisplay = distUnit === 'miles' ? +(maxKm * KM_TO_MILES).toFixed(1) : +maxKm.toFixed(1);
+  routes.forEach(r => {
+    if (!r.offsetSlider) return;
+    r.offsetSlider.max   = maxDisplay;
+    r.offsetSlider.value = distUnit === 'miles'
+      ? +(r.offsetKm * KM_TO_MILES).toFixed(1)
+      : +r.offsetKm.toFixed(1);
+    r.offsetLabel.textContent = formatOffset(r.offsetKm);
+  });
 }
 
 function renderChart() {
@@ -217,7 +296,7 @@ function renderChart() {
   const yLabel   = eleUnit  === 'm'  ? 'Elevation (m)' : 'Elevation (ft)';
   const datasets = visible.map(r => ({
     label:           r.name,
-    data:            r.data.points.map(convertPoint),
+    data:            r.data.points.map(p => convertPoint(p, r.offsetKm)),
     borderColor:     r.color,
     backgroundColor: r.color + '18',
     borderWidth:     2,
