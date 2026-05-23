@@ -133,6 +133,51 @@ async function uploadFile(file) {
   }
 }
 
+// ── Map Thumbnail ─────────────────────────────────────────────────────────
+
+function buildThumbnailSVG(points, color) {
+  const W = 248, H = 80, PAD = 8;
+  const drawW = W - 2 * PAD;
+  const drawH = H - 2 * PAD;
+
+  let minLat = Infinity, maxLat = -Infinity;
+  let minLon = Infinity, maxLon = -Infinity;
+  for (const p of points) {
+    if (p.lat < minLat) minLat = p.lat;
+    if (p.lat > maxLat) maxLat = p.lat;
+    if (p.lon < minLon) minLon = p.lon;
+    if (p.lon > maxLon) maxLon = p.lon;
+  }
+
+  const latRange = maxLat - minLat;
+  const lonRange = maxLon - minLon;
+
+  const ptStr = points.map(p => {
+    const x = lonRange === 0 ? W / 2 : PAD + ((p.lon - minLon) / lonRange) * drawW;
+    const y = latRange === 0 ? H / 2 : PAD + ((maxLat - p.lat) / latRange) * drawH;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  svg.setAttribute('class', 'route-item__thumbnail');
+  svg.setAttribute('aria-hidden', 'true');
+
+  const polyline = document.createElementNS(NS, 'polyline');
+  polyline.setAttribute('points', ptStr);
+  polyline.setAttribute('stroke', color);
+  polyline.setAttribute('stroke-width', '1.5');
+  polyline.setAttribute('stroke-linecap', 'round');
+  polyline.setAttribute('stroke-linejoin', 'round');
+  polyline.setAttribute('fill', 'none');
+
+  svg.appendChild(polyline);
+  return svg;
+}
+
 // ── Route Management ──────────────────────────────────────────────────────
 
 function addRoute(data) {
@@ -213,7 +258,7 @@ function addRoute(data) {
   route.offsetLabel  = offsetValue;
 
   offsetRow.append(offsetLabelEl, slider, offsetValue);
-  li.append(header, offsetRow);
+  li.append(header, buildThumbnailSVG(data.points, route.color), offsetRow);
   routeList.appendChild(li);
 
   routeCount.textContent = routes.length;
