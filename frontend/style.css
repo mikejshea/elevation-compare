@@ -328,6 +328,14 @@ body {
   text-overflow: ellipsis;
 }
 
+.route-item__thumbnail {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
 .route-item__offset {
   display: flex;
   align-items: center;

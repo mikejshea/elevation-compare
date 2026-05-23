@@ -29,6 +29,8 @@ type gpxPoint struct {
 type Point struct {
 	Distance  float64 `json:"distance"`
 	Elevation float64 `json:"elevation"`
+	Lat       float64 `json:"lat"`
+	Lon       float64 `json:"lon"`
 }
 
 type RouteData struct {
@@ -92,6 +94,8 @@ func Parse(data []byte) (*RouteData, error) {
 		points[i] = Point{
 			Distance:  math.Round(cumDist*1000) / 1000,
 			Elevation: math.Round((p.ele-minEle)*10) / 10,
+			Lat:       p.lat,
+			Lon:       p.lon,
 		}
 	}
 

@@ -141,6 +141,27 @@ func TestResponseUnits(t *testing.T) {
 	}
 }
 
+// ── Lat/Lon passthrough ───────────────────────────────────────────────────
+
+func TestLatLonPassthrough(t *testing.T) {
+	pts := []struct{ lat, lon, ele float64 }{
+		{48.8566, 2.3522, 35},
+		{51.5074, -0.1278, 50},
+	}
+	route, err := Parse(gpxDoc("Test", pts))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for i, p := range pts {
+		if route.Points[i].Lat != p.lat {
+			t.Errorf("point[%d].Lat = %f, want %f", i, route.Points[i].Lat, p.lat)
+		}
+		if route.Points[i].Lon != p.lon {
+			t.Errorf("point[%d].Lon = %f, want %f", i, route.Points[i].Lon, p.lon)
+		}
+	}
+}
+
 // ── Error cases ───────────────────────────────────────────────────────────
 
 func TestParseErrors(t *testing.T) {
