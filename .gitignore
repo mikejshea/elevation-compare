@@ -1,0 +1,19 @@
+# Terraform
+terraform/.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Go
+/backend/server
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
