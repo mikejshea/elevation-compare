@@ -20,6 +20,7 @@ A single-page web application that allows users to upload `.gpx` files from Stra
 | 6 | Live deployment — Cloud Run deployed and verified | Complete |
 | 7 | Route X-axis offset slider | Complete |
 | 8 | Route map thumbnail — SVG polyline from lat/lon in sidebar | Complete |
+| 9 | Description panel — full-width informational section below chart | Complete |
 
 ---
 
@@ -48,6 +49,18 @@ A single-page web application that allows users to upload `.gpx` files from Stra
 - Built-in Chart.js tooltip is disabled (`plugins.tooltip.enabled: false`)
 - Hover interaction: custom inline Chart.js plugin draws a vertical crosshair line at the cursor position and displays the distance value in a label just below the x-axis; implemented via `afterEvent` / `afterDraw` plugin hooks using `scales.x.getValueForPixel()` for label interpolation
 - Smooth, professional styling consistent with light/dark mode
+
+### Description Panel
+
+A fixed-height strip pinned to the bottom of the viewport, always visible without scrolling. The page layout is a strict three-row column: header → middle section (sidebar + chart, `flex: 1`) → description panel (`flex-shrink: 0`). The chart area shrinks to accommodate the panel; all three rows fit within the viewport height with no page-level scroll.
+
+Three equal columns spanning the full panel width (no max-width constraint) on desktop; hidden entirely on mobile (≤640px) to preserve chart space:
+
+- **What is this?** — brief product description
+- **How to use it** — ordered steps: upload GPX, check/uncheck routes, use offset slider
+- **About elevation normalization** — explains why routes starting at different altitudes can still be compared (minimum elevation subtracted from all points so every route's lowest point is 0)
+
+A collapse toggle button (chevron) in the panel header hides the grid, leaving just a thin label strip. Collapsed state persists in `localStorage` across page loads. Chevron animates 180° on collapse/expand.
 
 ### Light / Dark Mode
 - Toggle button in the header
@@ -253,6 +266,22 @@ gcloud run deploy elevation-compare \
   --region=us-central1 \
   --project=elevation-compare
 ```
+
+---
+
+## Changelog
+
+### v3 (current)
+- Default units changed to miles and feet (was km and meters)
+- Built-in Chart.js tooltip disabled; replaced with a custom crosshair plugin that draws a vertical line and distance label below the x-axis on hover (`afterEvent` / `afterDraw` hooks, `scales.x.getValueForPixel()`)
+- Description panel added below the chart
+
+### v2
+- Route X-axis offset slider — per-route slider shifts the dataset along the X axis to align segments of different-length routes
+- Route map thumbnail — SVG polyline rendered from lat/lon in the sidebar for each route; no external map API
+
+### v1
+- Initial release: GPX upload, elevation normalization, multi-route overlay chart, light/dark mode, Cloud Run deployment
 
 ---
 

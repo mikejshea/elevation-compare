@@ -486,6 +486,29 @@ function renderChart() {
   });
 }
 
+// ── Description Panel ─────────────────────────────────────────────────────
+
+(function initDescPanel() {
+  const panel  = document.querySelector('.description-panel');
+  const toggle = document.getElementById('descToggle');
+  if (!panel || !toggle) return;
+
+  const KEY = 'desc-panel-collapsed';
+
+  function setCollapsed(collapsed) {
+    panel.classList.toggle('description-panel--collapsed', collapsed);
+    toggle.setAttribute('aria-expanded', String(!collapsed));
+    toggle.setAttribute('aria-label', collapsed ? 'Expand info panel' : 'Collapse info panel');
+    localStorage.setItem(KEY, String(collapsed));
+  }
+
+  if (localStorage.getItem(KEY) === 'true') setCollapsed(true);
+
+  toggle.addEventListener('click', () => {
+    setCollapsed(!panel.classList.contains('description-panel--collapsed'));
+  });
+}());
+
 // ── Init ──────────────────────────────────────────────────────────────────
 
 initTheme();
