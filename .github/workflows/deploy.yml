@@ -11,6 +11,7 @@ env:
   SERVICE: elevation-compare
   IMAGE: server
   CLOUD_RUN_SA: elevation-compare-run@elevation-compare.iam.gserviceaccount.com
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   deploy:
@@ -25,7 +26,7 @@ jobs:
 
       - id: auth
         name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
