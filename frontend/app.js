@@ -15,8 +15,8 @@ const M_TO_FT     = 3.28084;
 
 const routes = [];   // { id, name, data, visible, color, offsetKm, offsetSlider, offsetLabel }
 let chart       = null;
-let distUnit    = 'km'; // 'km' | 'miles'
-let eleUnit     = 'm';  // 'm' | 'ft'
+let distUnit    = 'miles'; // 'km' | 'miles'
+let eleUnit     = 'ft';   // 'm' | 'ft'
 let routeSeq    = 0;    // incrementing id for slider label association
 
 // ── DOM References ────────────────────────────────────────────────────────
@@ -271,9 +271,10 @@ function addRoute(data) {
 function chartThemeColors() {
   const dark = document.documentElement.getAttribute('data-theme') === 'dark';
   return {
-    grid:    dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)',
-    tick:    dark ? '#7d8590' : '#64748b',
-    legend:  dark ? '#e6edf3' : '#0f172a',
+    grid:      dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)',
+    tick:      dark ? '#7d8590' : '#64748b',
+    legend:    dark ? '#e6edf3' : '#0f172a',
+    crosshair: dark ? 'rgba(255,255,255,0.30)' : 'rgba(0,0,0,0.20)',
     tooltip: {
       bg:     dark ? '#1c2128' : '#ffffff',
       border: dark ? '#30363d' : '#e2e8f0',
@@ -323,6 +324,59 @@ function updateAllSliderUnits() {
   });
 }
 
+// ── Crosshair Plugin ──────────────────────────────────────────────────────
+
+const crosshairPlugin = {
+  id: 'crosshair',
+  _x: null,
+
+  afterEvent(chart, args) {
+    const prevX = this._x;
+    this._x = (args.event.type === 'mousemove' && args.inChartArea) ? args.event.x : null;
+    if (this._x !== prevX) args.changed = true;
+  },
+
+  afterDraw(chart) {
+    if (this._x === null) return;
+    const { ctx, chartArea, scales } = chart;
+    const { left, right, top, bottom } = chartArea;
+    const x = this._x;
+    if (x < left || x > right) return;
+
+    const colors = chartThemeColors();
+
+    ctx.save();
+
+    // Vertical line
+    ctx.beginPath();
+    ctx.moveTo(x, top);
+    ctx.lineTo(x, bottom);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = colors.crosshair;
+    ctx.stroke();
+
+    // Distance label with background below the x-axis
+    const rawDist = scales.x.getValueForPixel(x);
+    if (rawDist == null || isNaN(rawDist)) { ctx.restore(); return; }
+    const label = `${rawDist.toFixed(2)} ${distUnit}`;
+
+    ctx.font = '11px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    const textW = ctx.measureText(label).width;
+    const pad   = 3;
+    const ly    = bottom + 6;
+
+    ctx.fillStyle = colors.tooltip.bg;
+    ctx.fillRect(x - textW / 2 - pad, ly - pad, textW + pad * 2, 13 + pad * 2);
+    ctx.fillStyle = colors.tick;
+    ctx.fillText(label, x, ly);
+
+    ctx.restore();
+  },
+};
+
 function renderChart() {
   const visible = routes.filter(r => r.visible);
   const colors  = chartThemeColors();
@@ -367,6 +421,7 @@ function renderChart() {
     chart.options.plugins.tooltip.borderColor   = colors.tooltip.border;
     chart.options.plugins.tooltip.titleColor    = colors.tooltip.text;
     chart.options.plugins.tooltip.bodyColor     = colors.tooltip.text;
+    chart.options.plugins.tooltip.enabled       = false;
     chart.update('none');
     return;
   }
@@ -375,6 +430,7 @@ function renderChart() {
   chart = new Chart(ctx, {
     type: 'line',
     data: { datasets },
+    plugins: [crosshairPlugin],
     options: {
       responsive:          true,
       maintainAspectRatio: false,
@@ -394,6 +450,7 @@ function renderChart() {
           },
         },
         tooltip: {
+          enabled:         false,
           backgroundColor: colors.tooltip.bg,
           borderColor:     colors.tooltip.border,
           borderWidth:     1,

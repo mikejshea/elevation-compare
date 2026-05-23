@@ -42,10 +42,11 @@ A single-page web application that allows users to upload `.gpx` files from Stra
 
 ### Main Panel — Elevation Graph
 - Overlaid multi-line chart: one line per checked route
-- X-axis: distance (km or miles, with a toggle)
-- Y-axis: normalized elevation (meters or feet, with a toggle)
+- X-axis: distance (km or miles, with a toggle) — **default: miles**
+- Y-axis: normalized elevation (meters or feet, with a toggle) — **default: feet**
 - Each route gets a distinct color with a legend
-- Graph is interactive: hover tooltips showing distance and elevation at cursor
+- Built-in Chart.js tooltip is disabled (`plugins.tooltip.enabled: false`)
+- Hover interaction: custom inline Chart.js plugin draws a vertical crosshair line at the cursor position and displays the distance value in a label just below the x-axis; implemented via `afterEvent` / `afterDraw` plugin hooks using `scales.x.getValueForPixel()` for label interpolation
 - Smooth, professional styling consistent with light/dark mode
 
 ### Light / Dark Mode
