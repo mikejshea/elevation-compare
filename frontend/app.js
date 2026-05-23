@@ -486,6 +486,116 @@ function renderChart() {
   });
 }
 
+// ── PNG Export ────────────────────────────────────────────────────────────
+
+document.getElementById('downloadBtn').addEventListener('click', downloadPNG);
+
+function downloadPNG() {
+  const W         = 1600, H = 900;
+  const HEADER_H  = 56;
+  const SIDEBAR_W = 280;
+  const CHART_X   = SIDEBAR_W;
+  const CHART_Y   = HEADER_H;
+  const CHART_W   = W - SIDEBAR_W;
+  const CHART_H   = H - HEADER_H;
+  const PAD       = 16;
+
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const c = {
+    bg:      dark ? '#0d1117' : '#f1f5f9',
+    surface: dark ? '#161b22' : '#ffffff',
+    border:  dark ? '#30363d' : '#e2e8f0',
+    text:    dark ? '#e6edf3' : '#0f172a',
+    textSec: dark ? '#7d8590' : '#64748b',
+    accent:  dark ? '#58a6ff' : '#3b82f6',
+  };
+
+  const cv  = document.createElement('canvas');
+  cv.width  = W;
+  cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  // Background
+  ctx.fillStyle = c.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Header bar
+  ctx.fillStyle = c.surface;
+  ctx.fillRect(0, 0, W, HEADER_H);
+  ctx.fillStyle = c.border;
+  ctx.fillRect(0, HEADER_H - 1, W, 1);
+
+  // Header logo accent + title
+  ctx.fillStyle = c.accent;
+  ctx.font = '600 16px Inter, system-ui, sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Elevation Compare', PAD + 8, HEADER_H / 2);
+
+  // Sidebar background + right border
+  ctx.fillStyle = c.surface;
+  ctx.fillRect(0, HEADER_H, SIDEBAR_W, CHART_H);
+  ctx.fillStyle = c.border;
+  ctx.fillRect(SIDEBAR_W - 1, HEADER_H, 1, CHART_H);
+
+  // "Routes" section label
+  ctx.fillStyle = c.textSec;
+  ctx.font = '600 10px Inter, system-ui, sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.letterSpacing = '0.06em';
+  ctx.fillText('ROUTES', PAD, HEADER_H + PAD + 6);
+
+  // Route list
+  const maxNameW = SIDEBAR_W - PAD * 2 - 16;
+  let itemY = HEADER_H + PAD * 2 + 22;
+
+  routes.forEach(route => {
+    // Color dot
+    ctx.beginPath();
+    ctx.arc(PAD + 5, itemY, 5, 0, Math.PI * 2);
+    ctx.fillStyle = route.visible ? route.color : c.textSec;
+    ctx.fill();
+
+    // Route name, truncated to fit
+    ctx.font = '13px Inter, system-ui, sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = route.visible ? c.text : c.textSec;
+    let name = route.name;
+    if (ctx.measureText(name).width > maxNameW) {
+      while (name.length > 1 && ctx.measureText(name + '…').width > maxNameW) {
+        name = name.slice(0, -1);
+      }
+      name += '…';
+    }
+    ctx.fillText(name, PAD + 16, itemY);
+
+    itemY += 26;
+  });
+
+  // Chart area background, then chart image on top
+  ctx.fillStyle = c.surface;
+  ctx.fillRect(CHART_X, CHART_Y, CHART_W, CHART_H);
+
+  if (chart) {
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, CHART_X, CHART_Y, CHART_W, CHART_H);
+      triggerDownload(cv);
+    };
+    img.src = chart.toBase64Image('image/png', 1);
+  } else {
+    triggerDownload(cv);
+  }
+}
+
+function triggerDownload(canvas) {
+  const a  = document.createElement('a');
+  a.download = 'elevation-compare.png';
+  a.href     = canvas.toDataURL('image/png');
+  a.click();
+}
+
 // ── Description Panel ─────────────────────────────────────────────────────
 
 (function initDescPanel() {

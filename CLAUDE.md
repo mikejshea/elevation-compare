@@ -21,6 +21,7 @@ A single-page web application that allows users to upload `.gpx` files from Stra
 | 7 | Route X-axis offset slider | Complete |
 | 8 | Route map thumbnail — SVG polyline from lat/lon in sidebar | Complete |
 | 9 | Description panel — full-width informational section below chart | Complete |
+| 10 | PNG export — download button renders header + sidebar + chart to a 1600×900 canvas | Complete |
 
 ---
 
@@ -271,7 +272,10 @@ gcloud run deploy elevation-compare \
 
 ## Changelog
 
-### v3 (current)
+### v4 (current)
+- PNG export button in the header downloads a 1600×900 landscape canvas image containing the header bar, sidebar route list, and chart — excludes the description panel; uses `chart.toBase64Image()` for the chart portion and Canvas 2D API for the header and sidebar; respects current light/dark theme
+
+### v3
 - Default units changed to miles and feet (was km and meters)
 - Built-in Chart.js tooltip disabled; replaced with a custom crosshair plugin that draws a vertical line and distance label below the x-axis on hover (`afterEvent` / `afterDraw` hooks, `scales.x.getValueForPixel()`)
 - Description panel added below the chart
