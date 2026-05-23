@@ -76,6 +76,35 @@
     </main>
   </div>
 
+  <section class="description-panel" aria-label="About Elevation Compare">
+    <div class="description-panel__header">
+      <span class="description-panel__label">About this app</span>
+      <button class="description-panel__toggle" id="descToggle" aria-expanded="true" aria-controls="descGrid" aria-label="Collapse info panel">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="18 15 12 9 6 15"/>
+        </svg>
+      </button>
+    </div>
+    <div class="description-panel__grid" id="descGrid">
+      <div class="description-panel__section">
+        <h2 class="description-panel__heading">What is this?</h2>
+        <p class="description-panel__body">Elevation Compare lets you upload GPX files exported from Strava, Garmin, or any GPS device and overlay their elevation profiles on a single chart. Upload multiple routes to see how their climbs and descents compare side by side.</p>
+      </div>
+      <div class="description-panel__section">
+        <h2 class="description-panel__heading">How to use it</h2>
+        <ol class="description-panel__list">
+          <li>Drag and drop one or more <code>.gpx</code> files onto the upload zone, or click it to browse.</li>
+          <li>Each route appears in the sidebar. Check or uncheck it to show or hide it on the chart.</li>
+          <li>Use the <strong>Offset</strong> slider under each route to shift it forward along the distance axis — useful for comparing a climb partway into a long ride against a shorter route.</li>
+        </ol>
+      </div>
+      <div class="description-panel__section">
+        <h2 class="description-panel__heading">About elevation normalization</h2>
+        <p class="description-panel__body">GPX files record elevation as absolute altitude above sea level. A ride starting at 5,000 ft and a ride starting at 500 ft would appear at completely different heights on the same chart. To make routes comparable, the app subtracts each route's minimum elevation from all its points — so the lowest point of every route sits at 0. The climbs and descents are preserved exactly; only the baseline shifts.</p>
+      </div>
+    </div>
+  </section>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="app.js"></script>
 </body>

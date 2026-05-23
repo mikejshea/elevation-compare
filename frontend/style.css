@@ -420,6 +420,116 @@ body {
 }
 
 /* ============================================================
+   Description Panel
+   ============================================================ */
+.description-panel {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  padding: var(--sp-md) var(--sp-lg);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.description-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-sm);
+}
+
+.description-panel__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
+
+.description-panel__toggle {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s;
+  line-height: 0;
+}
+
+.description-panel__toggle:hover {
+  color: var(--color-text);
+}
+
+.description-panel__toggle:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.description-panel__toggle svg {
+  transition: transform 0.2s ease;
+}
+
+.description-panel--collapsed .description-panel__header {
+  margin-bottom: 0;
+}
+
+.description-panel--collapsed .description-panel__grid {
+  display: none;
+}
+
+.description-panel--collapsed .description-panel__toggle svg {
+  transform: rotate(180deg);
+}
+
+.description-panel__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--sp-lg);
+}
+
+.description-panel__heading {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--sp-sm);
+}
+
+.description-panel__body {
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.7;
+}
+
+.description-panel__list {
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.8;
+  padding-left: var(--sp-lg);
+}
+
+.description-panel__list li {
+  margin-bottom: var(--sp-xs);
+}
+
+.description-panel__list code {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+
+.description-panel__list strong {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* ============================================================
    Mobile
    ============================================================ */
 @media (max-width: 640px) {
@@ -439,6 +549,10 @@ body {
   }
 
   .header__title {
+    display: none;
+  }
+
+  .description-panel {
     display: none;
   }
 }
