@@ -13,7 +13,7 @@ const M_TO_FT     = 3.28084;
 
 // ── State ─────────────────────────────────────────────────────────────────
 
-const routes = [];   // { id, name, data, visible, color, offsetKm, offsetSlider, offsetLabel }
+const routes = [];   // { id, name, data, visible, color, offsetKm, offsetSlider, offsetLabel, offsetEleM, offsetYSlider, offsetYLabel }
 let chart       = null;
 let distUnit    = 'miles'; // 'km' | 'miles'
 let eleUnit     = 'ft';   // 'm' | 'ft'
@@ -71,6 +71,7 @@ elevationToggle.addEventListener('click', () => {
   eleUnit = eleUnit === 'm' ? 'ft' : 'm';
   elevationToggle.textContent = eleUnit;
   elevationToggle.setAttribute('aria-label', `Switch to ${eleUnit === 'm' ? 'ft' : 'm'}`);
+  updateAllYSliderUnits();
   if (chart) renderChart();
 });
 
@@ -183,12 +184,13 @@ function buildThumbnailSVG(points, color) {
 function addRoute(data) {
   const routeId = `route-${++routeSeq}`;
   const route = {
-    id:       Symbol(),
-    name:     data.name,
+    id:         Symbol(),
+    name:       data.name,
     data,
-    visible:  true,
-    color:    COLORS[routes.length % COLORS.length],
-    offsetKm: 0,
+    visible:    true,
+    color:      COLORS[routes.length % COLORS.length],
+    offsetKm:   0,
+    offsetEleM: 0,
   };
   routes.push(route);
 
@@ -258,7 +260,40 @@ function addRoute(data) {
   route.offsetLabel  = offsetValue;
 
   offsetRow.append(offsetLabelEl, slider, offsetValue);
-  li.append(header, buildThumbnailSVG(data.points, route.color), offsetRow);
+
+  // ── Y-Offset row: label + slider + value ─────────────────────────────────
+  const yOffsetRow = document.createElement('div');
+  yOffsetRow.className = 'route-item__offset';
+
+  const yOffsetLabelEl = document.createElement('label');
+  yOffsetLabelEl.className   = 'route-item__offset-label';
+  yOffsetLabelEl.textContent = 'V-Offset';
+  yOffsetLabelEl.setAttribute('for', `${routeId}-y-offset`);
+
+  const ySlider = document.createElement('input');
+  ySlider.type      = 'range';
+  ySlider.id        = `${routeId}-y-offset`;
+  ySlider.className = 'route-item__offset-slider';
+  ySlider.step      = '1';
+  ySlider.value     = '0';
+  ySlider.setAttribute('aria-label', `Y-axis offset for ${data.name}`);
+
+  const yOffsetValue = document.createElement('span');
+  yOffsetValue.className   = 'route-item__offset-value';
+  yOffsetValue.textContent = formatYOffset(0);
+
+  ySlider.addEventListener('input', () => {
+    const displayVal    = parseFloat(ySlider.value);
+    route.offsetEleM    = eleUnit === 'ft' ? displayVal / M_TO_FT : displayVal;
+    yOffsetValue.textContent = formatYOffset(route.offsetEleM);
+    renderChart();
+  });
+
+  route.offsetYSlider = ySlider;
+  route.offsetYLabel  = yOffsetValue;
+
+  yOffsetRow.append(yOffsetLabelEl, ySlider, yOffsetValue);
+  li.append(header, buildThumbnailSVG(data.points, route.color), offsetRow, yOffsetRow);
   routeList.appendChild(li);
 
   routeCount.textContent = routes.length;
@@ -283,11 +318,12 @@ function chartThemeColors() {
   };
 }
 
-function convertPoint(p, offsetKm = 0) {
+function convertPoint(p, offsetKm = 0, offsetEleM = 0) {
   const distKm = p.distance + offsetKm;
+  const eleM   = p.elevation + offsetEleM;
   return {
     x: distUnit === 'miles' ? +(distKm * KM_TO_MILES).toFixed(3) : distKm,
-    y: eleUnit  === 'ft'    ? +(p.elevation * M_TO_FT).toFixed(1) : p.elevation,
+    y: eleUnit  === 'ft'    ? +(eleM * M_TO_FT).toFixed(1) : eleM,
   };
 }
 
@@ -295,6 +331,14 @@ function formatOffset(offsetKm) {
   return distUnit === 'miles'
     ? `+${(offsetKm * KM_TO_MILES).toFixed(1)} mi`
     : `+${offsetKm.toFixed(1)} km`;
+}
+
+function formatYOffset(offsetEleM) {
+  const val  = eleUnit === 'ft' ? offsetEleM * M_TO_FT : offsetEleM;
+  const sign = val >= 0 ? '+' : '';
+  return eleUnit === 'ft'
+    ? `${sign}${val.toFixed(0)} ft`
+    : `${sign}${val.toFixed(0)} m`;
 }
 
 function getMaxRouteDistanceKm() {
@@ -305,10 +349,25 @@ function getMaxRouteDistanceKm() {
   }));
 }
 
+function getMaxRouteElevationM() {
+  if (!routes.length) return 500;
+  return Math.max(...routes.map(r =>
+    Math.max(...r.data.points.map(p => p.elevation), 0)
+  ));
+}
+
 function updateAllSliderMaxes() {
   const maxKm = getMaxRouteDistanceKm();
   const maxDisplay = distUnit === 'miles' ? +(maxKm * KM_TO_MILES).toFixed(1) : +maxKm.toFixed(1);
   routes.forEach(r => { if (r.offsetSlider) r.offsetSlider.max = maxDisplay; });
+
+  const maxEleM = getMaxRouteElevationM();
+  const maxEleDisplay = eleUnit === 'ft' ? Math.round(maxEleM * M_TO_FT) : Math.round(maxEleM);
+  routes.forEach(r => {
+    if (!r.offsetYSlider) return;
+    r.offsetYSlider.min = -maxEleDisplay;
+    r.offsetYSlider.max =  maxEleDisplay;
+  });
 }
 
 function updateAllSliderUnits() {
@@ -321,6 +380,20 @@ function updateAllSliderUnits() {
       ? +(r.offsetKm * KM_TO_MILES).toFixed(1)
       : +r.offsetKm.toFixed(1);
     r.offsetLabel.textContent = formatOffset(r.offsetKm);
+  });
+}
+
+function updateAllYSliderUnits() {
+  const maxEleM = getMaxRouteElevationM();
+  const maxEleDisplay = eleUnit === 'ft' ? Math.round(maxEleM * M_TO_FT) : Math.round(maxEleM);
+  routes.forEach(r => {
+    if (!r.offsetYSlider) return;
+    r.offsetYSlider.min   = -maxEleDisplay;
+    r.offsetYSlider.max   =  maxEleDisplay;
+    r.offsetYSlider.value = eleUnit === 'ft'
+      ? +(r.offsetEleM * M_TO_FT).toFixed(0)
+      : +r.offsetEleM.toFixed(0);
+    r.offsetYLabel.textContent = formatYOffset(r.offsetEleM);
   });
 }
 
@@ -395,7 +468,7 @@ function renderChart() {
   const yLabel   = eleUnit  === 'm'  ? 'Elevation (m)' : 'Elevation (ft)';
   const datasets = visible.map(r => ({
     label:           r.name,
-    data:            r.data.points.map(p => convertPoint(p, r.offsetKm)),
+    data:            r.data.points.map(p => convertPoint(p, r.offsetKm, r.offsetEleM)),
     borderColor:     r.color,
     backgroundColor: r.color + '18',
     borderWidth:     2,
@@ -479,7 +552,6 @@ function renderChart() {
           title: { display: true, text: yLabel, color: colors.tick, font: { size: 12 } },
           grid:  { color: colors.grid },
           ticks: { color: colors.tick, font: { size: 11 } },
-          min:   0,
         },
       },
     },

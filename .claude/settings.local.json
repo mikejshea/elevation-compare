@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(docker build *)"
+      "Bash(docker build *)",
+      "Bash(git *)",
+      "Bash(go test *)",
+      "Bash(xargs kill -9)",
+      "Bash(go run *)",
+      "Bash(curl -s http://localhost:8080)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080)",
+      "Bash(go build *)",
+      "Bash(lsof -i :8080 -sTCP:LISTEN)",
+      "Bash(curl -s http://localhost:8080/)"
     ]
   }
 }

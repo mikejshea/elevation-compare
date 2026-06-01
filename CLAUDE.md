@@ -22,6 +22,7 @@ A single-page web application that allows users to upload `.gpx` files from Stra
 | 8 | Route map thumbnail — SVG polyline from lat/lon in sidebar | Complete |
 | 9 | Description panel — full-width informational section below chart | Complete |
 | 10 | PNG export — download button renders header + sidebar + chart to a 1600×900 canvas | Complete |
+| 11 | Route Y-axis offset slider | Complete |
 
 ---
 
@@ -271,8 +272,10 @@ gcloud run deploy elevation-compare \
 ---
 
 ## Changelog
+### v5 (current)
+- Route Y-axis offset slider — per-route "V-Offset" slider shifts the elevation profile up or down; range is ±max elevation across loaded routes; updates when elevation unit is toggled; allows comparing climbs at different vertical positions
 
-### v4 (current)
+### v4
 - PNG export button in the header downloads a 1600×900 landscape canvas image containing the header bar, sidebar route list, and chart — excludes the description panel; uses `chart.toBase64Image()` for the chart portion and Canvas 2D API for the header and sidebar; respects current light/dark theme
 
 ### v3
